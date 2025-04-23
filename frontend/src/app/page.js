@@ -34,7 +34,7 @@ export default function Home() {
 
       try {
         const response = await fetch(
-          'https://19af-2607-f140-400-60-c4ca-302e-2368-53d7.ngrok-free.app/get_most_recent',
+          'https://53a0-2001-5a8-450c-de00-d446-3bd7-9546-1a96.ngrok-free.app/get_most_recent',
           {
             method: 'POST',
             headers: {
