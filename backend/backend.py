@@ -1,6 +1,8 @@
-from flask import Flask, request
+from flask import Flask, request, jsonify
 from flask_cors import CORS
 import json
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 app = Flask(__name__)
 
@@ -8,7 +10,9 @@ CORS(app, origins=["http://localhost:3000"])
 
 # mimics an actual database. Stores data points on each bottle
 database = {
-    "bottle_1": [100]
+    "bottle_1": [],
+    "bottle_2": [],
+    "bottle_3": [],
 }
 
 @app.route("/")
@@ -28,7 +32,7 @@ def reset_data():
 
     name = data["bottle_name"]
 
-    database[name] = [100]
+    database[name] = []
 
     return f"successfully reset {name}"
 
@@ -47,11 +51,24 @@ def upload_data():
     data = json.loads(request.data.decode('utf-8'))
     
     name = data["bottle_name"]
-    new_data_points = data["data"]
+    duration = data["duration"]
+    utc_tuple = data["timestamp"]
 
-    database[name].extend(new_data_points)
+    # Convert tuple to datetime in UTC
+    dt_utc = datetime(*utc_tuple[:6], tzinfo=ZoneInfo("UTC"))
 
-    return f"successfully uploaded {len(new_data_points)} data points to {name}"
+    # Convert to PST/PDT (America/Los_Angeles handles daylight saving)
+    dt_pst = dt_utc.astimezone(ZoneInfo("America/Los_Angeles"))
+
+    # Format as hour:minute
+    formatted_time = dt_pst.strftime("%I:%M:%S %p")
+
+    database[name].append({
+        "duration": duration,
+        "time": formatted_time,
+    })
+
+    return "successfully uploaded", 200
 
 @app.route("/get_most_recent", methods=["POST"])
 def get_most_recent():
@@ -88,7 +105,7 @@ def get_data():
 
 @app.route("/get_database", methods=["GET"])
 def get_database():
-    return database
+    return jsonify(database)
 
 
 if __name__ == "__main__":
