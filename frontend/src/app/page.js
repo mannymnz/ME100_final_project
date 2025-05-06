@@ -21,9 +21,11 @@ function WaterLevel({ level }) {
   );
 }
 
+const backend_domain = "https://f93b-2001-5a8-450c-de00-4d7f-2912-2688-2605.ngrok-free.app"
+
 
 export default function Home() {
-  const [water, setWater] = useState(0)
+  const [water, setWater] = useState({})
   const isFetching = useRef(false);
 
   useEffect(() => {
@@ -34,20 +36,16 @@ export default function Home() {
 
       try {
         const response = await fetch(
-          'https://53a0-2001-5a8-450c-de00-d446-3bd7-9546-1a96.ngrok-free.app/get_most_recent',
+          "https://f93b-2001-5a8-450c-de00-4d7f-2912-2688-2605.ngrok-free.app/get_most_recent",
           {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ bottle_name: 'bottle_1' }),
+            method: "POST"
           }
         );
 
-        const data = await response.json();
-        console.log('Response:', data);
+        let data = await response.json()
 
         setWater(data)
+
       } catch (error) {
         console.error('Error fetching most recent:', error);
       }
@@ -63,13 +61,24 @@ export default function Home() {
 
   }, []);
 
+  const bottles = Object.keys(water);
+
+  console.log(bottles)
+
   return (
     <div className="text-center">
       <div className="h-[60px]"></div>
       <div className="font-bold font-xl">
         water bottle program
       </div>
-      <WaterLevel level={water}/>
+
+      <div className="flex justify-center">
+        {bottles.map((v, i) => (
+          <div key={i}>
+            <WaterLevel level={water[v]}/>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
