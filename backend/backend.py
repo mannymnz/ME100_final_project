@@ -9,11 +9,7 @@ app = Flask(__name__)
 CORS(app, origins=["http://localhost:3000"])
 
 # mimics an actual database. Stores data points on each bottle
-database = {
-    "bottle_1": [],
-    "bottle_2": [],
-    "bottle_3": [],
-}
+database = { }
 
 @app.route("/")
 def hello_world():
