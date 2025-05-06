@@ -4,13 +4,14 @@ import ujson
 import LSM6DSO
 import math
 import time
+import ntptime
 
 # imu setup
 i2c = I2C(1, scl=Pin(12), sda=Pin(13))
 imu = LSM6DSO.LSM6DSO(i2c)
 
-BACKEND_URL = "https://09c8-2607-f140-400-60-59e2-cb12-e25-4b2c.ngrok-free.app"
-BOTTLE_NAME = "bottle_1"
+BACKEND_URL = "https://09c8-2607-f140-400-60-59e2-cb12-e25-4b2c.ngrok-free.app" # THIS MAY NEED TO BE CHANGED
+BOTTLE_NAME = "manuel" # can be anything
 
 def get_tilt_angles():
     ax = imu.ax() / 1000  # convert from mg to g
@@ -31,6 +32,7 @@ def upload_data(dp):
         "data": dp,
     })
     try:
+        ntptime.settime()
         response = requests.post(
             f"{BACKEND_URL}/upload_data",
             headers=headers,
@@ -41,6 +43,9 @@ def upload_data(dp):
             })
         )
         response.close()
+        
+        if response.status_code == 200:
+            print("success uploading data")
         
     except Exception as e:
         print("failure uploading data:", e)
@@ -58,9 +63,8 @@ def reset_data():
     print("Content:", response.text[:500])  # only print the first 500 characters
     response.close()
     
-
-reset_data()
-
+    assert response.status_code == 200, "wifi is bad, please try again"
+    
 
 
 pickups = 0
@@ -100,7 +104,3 @@ while True:
             start_pickup = curr_time
     
     time.sleep(0.1)
-    
-    
-    
-    
