@@ -2,27 +2,43 @@
 import Image from "next/image";
 import { useEffect, useState, useRef } from "react";
 
-function WaterLevel({ level }) {
-  const clampedLevel = Math.max(0, Math.min(100, level));
 
-  return (
-    <div className="flex flex-col items-center">
-      <div className="relative h-64 w-16 border-4 border-blue-500 rounded-2xl overflow-hidden">
-        <div
-          className="absolute bottom-0 left-0 w-full bg-blue-400 transition-all duration-500"
-          style={{ height: `${clampedLevel}%` }}
-        />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-black font-bold">
-          {clampedLevel}%
-        </div>
-      </div>
-      <p className="mt-2 text-sm font-bold text-gray-700">Water Level</p>
-    </div>
-  );
+const dehydration_limit = 10; // the amount of time without drinking to be considered dehydrated
+
+
+function secondsPast(timeStr) {
+  // Get current time in PST as a Date object
+  const now = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Los_Angeles" }));
+
+  // Get today's date in PST in MM/DD/YYYY format
+  const pstDateStr = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/Los_Angeles',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).format(now);
+
+  // Combine date with input time string
+  const fullDateTimeStr = `${pstDateStr} ${timeStr}`;
+
+  // Create a Date object for the input time (still interpreted as local, so adjust)
+  const inputTime = new Date(new Date(fullDateTimeStr).toLocaleString('en-US', {
+    timeZone: 'America/Los_Angeles'
+  }));
+
+  // Calculate the difference in seconds
+  const diffInSeconds = Math.floor((now - inputTime) / 1000);
+
+  return diffInSeconds;
 }
 
-const BACKEND_DOMAIN = "https://09c8-2607-f140-400-60-59e2-cb12-e25-4b2c.ngrok-free.app"
 
+
+function round_tenth(number) {
+  return Math.round(number * 10) / 10;
+}
+
+const BACKEND_DOMAIN = "https://me100-final-project-1.onrender.com/"
 
 export default function Home() {
   const [pickups, setPickups] = useState({})
@@ -65,27 +81,96 @@ export default function Home() {
 
   const bottles = Object.keys(pickups)
 
+  const pickups_data = []
+
+  for (let bottle_name of bottles) {
+    const new_bottle = {}
+    const raw_data = pickups[bottle_name]
+
+    new_bottle.name = bottle_name
+    new_bottle.time_drank = round_tenth(pickups[bottle_name].reduce((sum, item) => sum + (item.duration || 0), 0))
+    new_bottle.num_pickups = pickups[bottle_name].length
+    new_bottle.data = pickups[bottle_name]
+
+    if (raw_data.length > 0) {
+      new_bottle.second_since_drink = secondsPast(raw_data[raw_data.length - 1]?.time)
+    }
+    else {
+      new_bottle.second_since_drink = 100
+    }
+
+    pickups_data.push(new_bottle)
+  }
+
+  const maxTimeDrank = round_tenth(Math.max(...pickups_data.map(drink => drink.time_drank)));
+
+  console.log(maxTimeDrank)
+
   return (
     <div className="text-center">
       <div className="h-[60px]"></div>
-      <div className="font-bold font-xl">
-        water bottle program
+      <div className="font-bold text-3xl">
+        Are my friends hydrated?
       </div>
 
       <div className="flex justify-center">
-        {bottles.map((bottle_name, bottle_i) => (
-          <div className="m-10" key={bottle_i}>
-            <div>{bottle_name}</div>
-
-            <div>{pickups[bottle_name].length} pickups today</div>
-
-            {pickups[bottle_name].map((dp, dp_i) => (
-              <div key={dp_i}>
-                {dp["duration"]}s - {dp["time"]}
+        {pickups_data.map((data, i) => (
+          <div className="m-10" key={i}>
+            <div>
+              {data.time_drank == maxTimeDrank ? (
+                <div>
+                  <img className="m-auto" src="crown.png" height={50} width={50}/> 
+                </div>
+              ):(
+                <div className="h-[35px]"></div>
+              )}
+            </div>
+            <div className="font-bold text-2xl">
+              {data.name}
+            </div>
+            <div className="font-bold">
+              {data.second_since_drink < dehydration_limit ? "HYDRATED" : "DEHYDRATED"}
+            </div>
+            {data.second_since_drink < dehydration_limit ? (
+              <div>
+                <img src="strong_spongebob.webp" height={200}/>
               </div>
-            ))}
-            
+            ) : (
+              <div>
+                <img src="dehydrated_spongebob.jpg" height={200}/>
+              </div>
+            )}
+            <div>
+              --- stats ---
+
+            </div>
+
+            <div>
+              {data.num_pickups} pickups today
+            </div>
+            <div>
+              {data.time_drank}s drank today
+            </div>
+            <div>
+              last drank water at {data.data.length ? data.data[data.data.length - 1].time : "N/A"}
+            </div>
+            <div>
+              seconds since last drink {data.second_since_drink}
+            </div>
+
+            <div>
+              --- data ---
+            </div>
+
+            {
+              data.data.map((v, i) => (
+                <div key={i}>
+                  {v.duration}s @ {v.time}
+                </div>
+              ))
+            }
           </div>
+
         ))}
       </div>
 
