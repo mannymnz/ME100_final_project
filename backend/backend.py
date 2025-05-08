@@ -6,7 +6,7 @@ from zoneinfo import ZoneInfo
 
 app = Flask(__name__)
 
-CORS(app, origins=["http://localhost:3000"])
+CORS(app, origins=["http://localhost:3000", "https://me-100-final-project.vercel.app"])
 
 # mimics an actual database. Stores data points on each bottle
 database = {}
